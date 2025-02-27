@@ -1,0 +1,48 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Streamlit App",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "${file}",  // Runs the currently open file
+                "--server.port", "8501",  // Optional: Port number
+                "--server.address", "localhost"
+            ],
+            "env": {
+                "PYTHONUNBUFFERED": "1"
+            },
+            "justMyCode": true
+        },
+        {
+            "name": "Attach to Streamlit Debugger",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "${file}",  // Runs the currently open file
+                "--server.port", "8501",  // Optional: Port number
+                "--server.address", "localhost"
+            ],
+            "env": {
+                "PYTHONUNBUFFERED": "1"
+            },
+            "justMyCode": true
+        }
+    ]
+}

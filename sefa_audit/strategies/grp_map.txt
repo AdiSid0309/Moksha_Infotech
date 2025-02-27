@@ -1,0 +1,95 @@
+# import re
+# import streamlit as st
+# import pandas as pd
+#
+#
+# class Group_and_map():
+#     def __init__(self):
+#         pass
+#
+#     def cal_variance(self, sefa_df, tb_df):
+#         if 'FUND_CODE' in sefa_df.columns:
+#             seen_combinations = {}  # Dictionary to track CFDA, Fund, and optionally Programs combinations
+#             removed_combinations_count = {}  # Dictionary to track removed CFDA and Fund combinations with counts
+#             has_programs = 'Programs' in sefa_df.columns  # Check if "Programs" column exists
+#
+#             # Iterate through the DataFrame
+#             for idx, row in sefa_df.iterrows():
+#                 expenditure = row['EXPENDITURES']
+#                 final_amount = 0  # Initialize total amount to 0
+#
+#                 if isinstance(row['Normalized_Fund'], list) and row['Normalized_Fund'] is not None:
+#                     for fund in row['Normalized_Fund']:
+#                         # Filter rows in tb_df based on FUND_CODE
+#                         filtered_df = tb_df[tb_df['FUND_CODE'] == fund]
+#
+#                         # Sum amounts where Map_No starts with '5' or higher
+#                         for _, tb_row in filtered_df.iterrows():
+#                             map_value = str(tb_row['Map_No'])
+#                             if map_value[0] >= '5':  # Check if the first character is >= '5'
+#                                 final_amount += tb_row['Amount']
+#
+#                     variance = expenditure - final_amount
+#                     variance = 0 if abs(variance) < 1 else variance
+#
+#                     cfda = row['CFDA']
+#                     fund_key = tuple(sorted(row['Normalized_Fund'])) if isinstance(row['Normalized_Fund'], list) else ()
+#
+#                     # Create key considering Programs if it exists
+#                     if has_programs:
+#                         program = row['Programs']
+#                         cfda_fund_key = (cfda, program, fund_key)
+#                     else:
+#                         cfda_fund_key = (cfda, fund_key)
+#
+#                     if cfda_fund_key in seen_combinations:
+#                         # Compare expenditures and retain the highest one
+#                         if expenditure > seen_combinations[cfda_fund_key]['EXPENDITURES']:
+#                             removed_row = seen_combinations[cfda_fund_key]['Row']
+#                             removed_key = (removed_row['CFDA'], tuple(removed_row['Normalized_Fund']), removed_row['EXPENDITURES'])
+#
+#                             # Increment the removal count
+#                             removed_combinations_count[removed_key] = removed_combinations_count.get(removed_key, 0) + 1
+#
+#                             # Replace the entry with the new highest expenditure row
+#                             seen_combinations[cfda_fund_key] = {
+#                                 'EXPENDITURES': expenditure,
+#                                 'TB_Balance': final_amount,
+#                                 'Variances': variance,
+#                                 'Row': row
+#                             }
+#                         else:
+#                             # Current row is being removed, track its count
+#                             removed_key = (cfda, fund_key, expenditure)
+#                             removed_combinations_count[removed_key] = removed_combinations_count.get(removed_key, 0) + 1
+#                     else:
+#                         seen_combinations[cfda_fund_key] = {
+#                             'EXPENDITURES': expenditure,
+#                             'TB_Balance': final_amount,
+#                             'Variances': variance,
+#                             'Row': row
+#                         }
+#
+#             # Reconstruct the DataFrame with only the highest expenditure rows
+#             new_rows = [data['Row'] for data in seen_combinations.values()]
+#             sefa_df = pd.DataFrame(new_rows).reset_index(drop=True)
+#             sefa_df['TB_Balance'] = [data['TB_Balance'] for data in seen_combinations.values()]
+#             sefa_df['Variances'] = [data['Variances'] for data in seen_combinations.values()]
+#
+#             # Convert removed combinations dictionary to a DataFrame
+#             if removed_combinations_count:
+#                 removed_df = pd.DataFrame([
+#                     [key[0], list(key[1]), key[2], count]
+#                     for key, count in removed_combinations_count.items()
+#                 ], columns=['CFDA', 'Normalized_Fund', 'EXPENDITURES', 'No. of times removed'])
+#
+#                 # Display the removed combinations with counts in Streamlit
+#                 if not removed_df.empty:
+#                     st.warning("Some CFDA and Fund combinations were repeated and have been removed. Their amounts and variances remain the same.")
+#                     st.write("Removed CFDA and Fund Combinations:")
+#                     st.dataframe(removed_df)
+#
+#         # Select the relevant columns for the variance output
+#         selected_columns = ['CFDA', 'Programs', 'Normalized_Fund', 'EXPENDITURES', 'TB_Balance', 'Variances']
+#         variance_df = sefa_df[[col for col in selected_columns if col in sefa_df.columns]]
+#         return variance_df

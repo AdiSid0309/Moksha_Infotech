@@ -1,0 +1,33 @@
+from utils.logger import log_info, log_error
+
+class SefaDrawdownProcessor():
+    # Filter TB DataFrame
+    def filter_tb(self,tb_df):
+        return tb_df[tb_df['Map_Description'].str.lower() == "cash and cash equivalents".lower()]
+
+    # Filter GL DataFrame based on TB codes
+    def filter_gl(self,gl_df, gl_codes, fund_codes):
+        return gl_df[gl_df['GL_Code'].isin(gl_codes) & gl_df['Fund_Code'].isin(fund_codes)]
+
+    # Map function to process GL records
+    def map_function(self,batch, program_details, model):
+        prompt = f"Given the following GL records: {batch} and program details: {program_details}, identify which records are relevant for federal funds received in bank for the grant program. Respond with 'yes' or 'no' for each record.Generate the output as JSON. ONly show the JSON"
+        return model.predict(prompt)
+        
+    def process(self, gl_filtered, sefa_program_details, batch_size, model):
+
+        if gl_filtered is not None and not gl_filtered.empty:
+            gl_records = gl_filtered.to_dict(orient='records')
+            relevant_responses = []
+
+            for i in range(0, len(gl_records), batch_size):
+                batch = gl_records[i:i + batch_size]
+                responses = self.map_function(batch, sefa_program_details, model)
+                relevant_responses.extend(responses)
+
+            relevant_gl_codes = [gl_filtered['GL_Code'].iloc[i] for i, response in enumerate(relevant_responses) if "yes" in response[0].lower()]
+            relevant_gl_codes = list(set(relevant_gl_codes))
+
+            gl_selected = gl_filtered[gl_filtered['GL_Code'].isin(relevant_gl_codes)]
+            
+        return gl_selected
